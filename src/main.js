@@ -10,7 +10,7 @@ const nodeViews = new Map()
 // 根据环境设置缓存目录
 
 const appPath = isDev ? __dirname : path.dirname(app.getPath('exe'))
-const cacheDir = path.join(appPath, '../cache')
+const cacheDir = path.join(appPath, '../.cache')
 const stateDir = path.join(cacheDir, 'state')
 const screenshotDir = path.join(cacheDir, 'screenshot')
 

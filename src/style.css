@@ -1,0 +1,122 @@
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  user-select: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+button {
+  outline: none;
+}
+
+::-webkit-scrollbar {
+  width: 4px !important;
+  height: 4px !important;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 1px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 1px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+#app {
+  background-color: #2a2b3c;
+  background-image: radial-gradient(circle at 10px 10px, rgba(255, 255, 255, 0.05) 1px, transparent 0);
+  background-size: 20px 20px;
+}
+
+/* URL输入框 - 必需的样式，无法完全用Tailwind替代 */
+#url-input {
+  position: absolute;
+  font-size: 18px;
+  padding: 2px 15px;
+  border: 1px solid rgba(0, 0, 0, 0.32);
+  outline: none;
+  background-color: white;
+  color: #0c0c0c;
+  border-radius: 12px;
+  z-index: 1000;
+  font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+}
+
+/* Canvas 特定样式 */
+.main-canvas {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+.main-canvas.dragging {
+  cursor: grabbing;
+}
+
+/* 无框窗口拖拽样式 */
+.electron-drag {
+  -webkit-app-region: drag;
+}
+
+.window-controls {
+  -webkit-app-region: no-drag;
+}
+
+
+body.window-dragging {
+  cursor: move;
+}
+
+/* 会话选择器样式 */
+#session-selector {
+  animation: fadeIn 0.1s ease-out;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  user-select: none;
+}
+
+#session-selector>div {
+  transition: background-color 0.1s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 必要的动画 */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}

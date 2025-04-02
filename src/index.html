@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZeroG</title>
+  <!-- 使用本地Tailwind CSS -->
+  <script src=" lib/tailwind.min.js">
+  </script>
+  <script>
+    const colors = {
+      primary: '#6c5ce7',
+      secondary: '#4a6fff',
+      background: '#2a2b3c',
+      surface: '#ffffff',
+      error: '#e81123'
+    }
+
+    tailwind.config = {
+      darkMode: 'media',
+      theme: {
+        extend: {
+          colors,
+          zIndex: {
+            '900': '900',
+            '1000': '1000',
+            '3000': '3000'
+          }
+        }
+      }
+    }
+  </script>
+  <script src="lib/vue.global.js"></script>
+  <script src="lib/vueuse.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="w-full h-screen rounded-md overflow-hidden bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+  <div id="app" class="w-full h-full"></div>
+  <!-- 组件模板 -->
+  <script id="app-template" type="text/x-template">
+    <app-title-bar></app-title-bar>
+    <canvas ref="canvas" class="w-full h-full"></canvas>
+    <sidebar-menu
+      :current-tool="toolbarState.currentTool"
+      :is-collapsed="toolbarState.isCollapsed"
+      @toggle-sidebar="toggleSidebar"
+      @switch-tool="switchTool"
+      @add-node="handleAddNode"
+      @reset-view="resetView"
+      @open-settings="openSettingsModal">
+    </sidebar-menu>
+    <settings-modal
+      v-if="showSettings"
+      :show="showSettings"
+      :settings="appSettings"
+      @close="closeSettingsModal"
+      @save="saveSettings">
+    </settings-modal>
+    <notification-system ref="notificationSystem"></notification-system>
+  </script>
+
+  <!-- 组件 JS 文件 -->
+  <script src="components/AppTitleBar.js"></script>
+  <script src="components/WindowControls.js"></script>
+  <script src="components/SidebarMenu.js"></script>
+  <script src="components/SettingsModal.js"></script>
+  <script src="components/NotificationSystem.js"></script>
+  <script src="hooks/index.js"></script>
+
+  <!-- 主应用 JS -->
+  <script src="renderer.js"></script>
+</body>
+
+</html>

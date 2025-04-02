@@ -428,8 +428,10 @@ app.whenReady().then(async () => {
       // 刷新缩放
       const targetWidth = nodeBounds.width * 2
       const newScaleFactor = targetWidth / bounds.width
-      nodeViewData.view.webContents.setZoomFactor(1 / newScaleFactor)
-      nodeViewData.view.webContents.executeJavaScript(`document.body.style.width = '${nodeBounds.width * 2}px'`)
+      if (nodeViewData.view?.webContents) {
+        nodeViewData.view.webContents.setZoomFactor(1 / newScaleFactor)
+        nodeViewData.view.webContents.executeJavaScript(`document.body.style.width = '${nodeBounds.width * 2}px'`)
+      }
     }
 
     return { success: true }

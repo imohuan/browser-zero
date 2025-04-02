@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
           setupCanvasEvents();
           setupWindowDragEvents();
           setupWindowEvents();
-          resetView();
+          // resetView();
 
           logger.info('应用初始化完成');
         } catch (error) {

@@ -1,6 +1,7 @@
 const { app, session, BrowserWindow, WebContentsView, ipcMain, } = require('electron')
 const path = require('path')
 const fs = require('fs')
+const { autoUpdater } = require('electron-updater');
 
 const nodeViews = new Map()
 
@@ -24,7 +25,18 @@ function ensureDir(dir) {
   }
 }
 
+
+autoUpdater.on('update-available', () => {
+  console.log("有更新可用");
+});
+
+autoUpdater.on('update-downloaded', () => {
+  console.log("更新已下载，准备安装");
+});
+
 async function createMainWindow() {
+  autoUpdater.checkForUpdatesAndNotify();
+
   // 创建主窗口，无边框风格
   const mainWindow = new BrowserWindow({
     width: 1200,

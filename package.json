@@ -6,7 +6,8 @@
   "scripts": {
     "start": "chcp 65001 && electron .",
     "dev": "nodemon --exec electron .",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "electron:build": "electron-builder"
   },
   "keywords": [
     "electron",
@@ -37,10 +38,22 @@
       "category": "public.app-category.productivity"
     },
     "win": {
-      "target": "nsis"
+      "target": [
+        "nsis"
+      ]
     },
     "linux": {
       "target": "AppImage"
+    },
+    "publish": {
+      "provider": "github",
+      "releaseType": "release"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
     }
   }
 }

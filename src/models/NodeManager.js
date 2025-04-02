@@ -75,6 +75,7 @@ class NodeManager {
    */
   addNode(x, y, options = {}) {
     const id = 'node_' + (++this.nodeCounter);
+    const { defaultSessionId, sessionIds } = app.settingsManager.getSettings()
     const node = {
       id,
       x,
@@ -83,11 +84,12 @@ class NodeManager {
       height: 400,
       url: '',
       title: '',
-      sessionId: options.sessionId || app.settingsManager.getSettings().defaultSessionId,
+      sessionId: options?.sessionId && sessionIds.includes(options.sessionId) ? options.sessionId : defaultSessionId,
       ...options,
       selected: true,
       preview: "",
     };
+
     this.hoverNode = id
     this.nodes.set(id, node);
     // 保存操作历史
@@ -1025,6 +1027,20 @@ class NodeManager {
     });
   }
 
+  /** 初始化节点 本地存储数据无效进行初始化 */
+  initNode() {
+    if (this.nodes.size === 0) {
+      this.addNode(0, 0, { url: "https://www.baidu.com" })
+    }
+    const initialState = { nodes: Array.from(this.nodes.entries()) };
+    this.history = [initialState];
+    this.currentHistoryIndex = 0;
+    // 加载视图
+    this.loadViews()
+    // 重绘画布
+    this.canvasManager.redraw();
+  }
+
   /**
    * 加载画布状态
    */
@@ -1054,7 +1070,10 @@ class NodeManager {
       // 重绘画布
       this.canvasManager.redraw();
       return true;
+    } else {
+      this.initNode()
     }
+
     return false;
   }
 
@@ -1130,7 +1149,9 @@ class NodeManager {
           nodeData.previewImage = image;
         }
       } else {
-        ctx.drawImage(previewImage, x, y, width, height);
+        try {
+          ctx.drawImage(previewImage, x, y, width, height);
+        } catch { }
       }
     }
 
@@ -1329,6 +1350,13 @@ class NodeManager {
     }
   }
 
+  clearPreview(nodeId) {
+    if (!this.nodes.has(nodeId)) return
+    const node = this.nodes.get(nodeId);
+    delete node.preview
+    delete node.previewImage
+  }
+
 
   /**
    * 显示会话选择器
@@ -1368,6 +1396,7 @@ class NodeManager {
             ${sessionId === node.sessionId ? '<span class="ml-2 text-blue-600 dark:text-blue-300">✓</span>' : ''}
         `;
       menuItem.addEventListener('click', () => {
+        this.clearPreview()
         this.setNodeSession(nodeId, sessionId);
         menuContainer.remove();
       });
@@ -1391,6 +1420,7 @@ class NodeManager {
     const handleClickOutside = (event) => {
       if (!menuContainer.contains(event.target)) {
         menuContainer.remove();
+        this.clearPreview()
         document.removeEventListener('click', handleClickOutside);
         ipcRenderer.invoke("set-web-contents-view-visible", { status: true, nodeId })
       }

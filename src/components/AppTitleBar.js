@@ -1,9 +1,8 @@
 // 应用标题栏组件
 const AppTitleBar = {
+  // <div class="absolute top-0 left-0 right-0 h-10 z-[998] flex items-center px-3"></div>
   template: `
-    <div class="absolute top-0 left-0 right-0 h-10 z-[998] flex items-center px-3">
-      <window-controls @minimize="minimize" @maximize="maximize" @toggle-maximize="toggleMaximize" @close="close" />
-    </div>
+    <window-controls @minimize="minimize" @maximize="maximize" @toggle-maximize="toggleMaximize" @close="close" />
   `,
   emits: ['window-drag'],
   setup(props, { emit }) {

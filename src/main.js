@@ -81,7 +81,7 @@ async function createMainWindow() {
   mainWindow.loadFile(path.join(__dirname, 'index.html'))
 
   // 开发环境打开开发者工具
-  if (process.env.NODE_ENV === 'development') {
+  if (isDev) {
     mainWindow.webContents.openDevTools()
   }
 

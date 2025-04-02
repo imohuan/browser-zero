@@ -15,6 +15,13 @@ class SettingsManager {
     this.settings = { ...this.defaultSettings };
   }
 
+  ensureSettings() {
+    if (this.settings.sessionIds.length === 0) {
+      this.settings.sessionIds = this.defaultSettings.sessionIds
+      this.settings.defaultSessionId = this.defaultSettings.sessionIds[0]
+    }
+  }
+
   /**
    * 加载设置
    * @returns {Promise<Object>} 加载的设置
@@ -27,10 +34,7 @@ class SettingsManager {
           ...this.defaultSettings,
           ...result.settings
         };
-        // if (this.settings.sessionIds.length === 0) {
-        //   this.settings.sessionIds = this.defaultSettings.sessionIds
-        //   this.settings.defaultSessionId = this.defaultSettings.sessionIds[0]
-        // }
+        this.ensureSettings()
       } else {
         // 如果加载失败，使用默认设置
         this.settings = { ...this.defaultSettings };
@@ -81,6 +85,7 @@ class SettingsManager {
    * @returns {Object} 当前设置
    */
   getSettings() {
+    this.ensureSettings()
     return { ...this.settings };
   }
 
@@ -89,7 +94,7 @@ class SettingsManager {
    * @returns {Array<string>} 会话ID列表
    */
   getSessionIds() {
-    return [...this.settings.sessionIds];
+    return [...this.getSettings().sessionIds];
   }
 
   /**
@@ -97,7 +102,7 @@ class SettingsManager {
    * @returns {string} 默认会话ID
    */
   getDefaultSessionId() {
-    return this.settings.sessionIds[0] || 'default';
+    return this.getSettings().sessionIds[0] || 'default';
   }
 
   /**

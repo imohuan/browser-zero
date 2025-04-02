@@ -7,7 +7,6 @@ ipcRenderer.on("window-focus", () => {
   document.body.classList.remove("electron-drag")
 })
 
-
 ipcRenderer.on("open-url", (event, { nodeId, url }) => {
   if (!app) return
   const node = app.nodeManager.nodes.get(nodeId)

@@ -8,10 +8,6 @@ importers:
 
   .:
     dependencies:
-      playwright:
-        specifier: ^1.51.1
-        version: 1.51.1
-    devDependencies:
       electron:
         specifier: 35.1.2
         version: 35.1.2
@@ -27,6 +23,9 @@ importers:
       nodemon:
         specifier: 3.1.9
         version: 3.1.9
+      playwright:
+        specifier: ^1.51.1
+        version: 1.51.1
 
 packages:
 

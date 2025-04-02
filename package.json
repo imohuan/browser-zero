@@ -1,6 +1,6 @@
 {
   "name": "zerog-canvas",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "基于Electron和Playwright的无限画布应用",
   "main": "src/main.js",
   "scripts": {
@@ -16,17 +16,16 @@
   ],
   "author": "",
   "license": "MIT",
-  "devDependencies": {
+  "dependencies": {
     "electron": "35.1.2",
     "electron-builder": "26.0.12",
     "electron-is-dev": "^3.0.1",
     "electron-updater": "^6.6.2",
-    "nodemon": "3.1.9"
-  },
-  "dependencies": {
+    "nodemon": "3.1.9",
     "playwright": "^1.51.1"
   },
   "build": {
+    "publish": null,
     "appId": "com.zerog.canvas",
     "productName": "ZeroG_Canvas",
     "icon": "src/favicon.ico",

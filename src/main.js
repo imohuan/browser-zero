@@ -24,6 +24,8 @@ if (isDev) {
   Object.defineProperty(app, 'isPackaged', { get: () => true });
   autoUpdater.updateConfigPath = path.join(appPath, 'dev-app-update.yml');
 }
+
+
 // https://github.com/imohuan/browser-zero/releases/download/v1.0.0/latest.yml
 // https://github.com/imohuan/browser-zero/releases/download/v0.0.12/ZeroG.Canvas-Web-Setup-1.0.1.exe.blockmap
 // https://github.com/imohuan/browser-zero/releases/download/v0.0.12/ZeroG-Canvas-Web-Setup-1.0.0.exe.blockmap

@@ -2,8 +2,8 @@ name: 构建和发布
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
 
 jobs:
   release:
@@ -15,13 +15,14 @@ jobs:
       - name: 设置 Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: '14'
+          cache: 'pnpm'
           
       - name: 安装依赖
-        run: npm ci
+        run: pnpm install
         
       - name: 构建应用
-        run: npm run build
+        run: pnpm run build
           
       - name: 上传构建产物到 Release
         uses: softprops/action-gh-release@v1

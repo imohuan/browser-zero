@@ -2,10 +2,8 @@ const { app, session, BrowserWindow, WebContentsView, ipcMain, dialog } = requir
 const path = require('path')
 const fs = require('fs')
 const { autoUpdater } = require('electron-updater');
-const isDev = require('electron-is-dev');
 
-
-
+const isDev = 'ELECTRON_IS_DEV' in process.env ? Number.parseInt(env.ELECTRON_IS_DEV, 10) === 1 : !app.isPackaged;
 const nodeViews = new Map()
 // 根据环境设置缓存目录
 
@@ -22,7 +20,7 @@ app.setPath('userData', cacheDir)
 
 // if (isDev) {
 //   Object.defineProperty(app, 'isPackaged', { get: () => true });
-//   autoUpdater.updateConfigPath = path.join(appPath, 'dev-app-update.yml');
+//   autoUpdater.updateConfigPath = path.join(appPath, 'update.yml');
 // }
 
 
@@ -150,7 +148,6 @@ async function createWebContentsView(mainWindow, option) {
       session: customSession,
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, "view_preload.js"),
       // 启用背景节流以减少不可见时的CPU占用
       backgroundThrottling: true,
       webSecurity: false

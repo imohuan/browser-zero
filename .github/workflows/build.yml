@@ -4,7 +4,7 @@ on:
   push:
     tags:
       - 'v*'
-      
+
 permissions:
   contents: write
 
@@ -41,4 +41,6 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            dist/**
+            dist/*.exe
+            dist/*.zip
+            dist/*.yml

@@ -65,6 +65,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setupCanvasEvents();
         setupWindowDragEvents();
         setupWindowEvents()
+
+        resetView()
       });
 
       // 设置窗口事件
@@ -88,7 +90,9 @@ document.addEventListener('DOMContentLoaded', () => {
             app.nodeManager.nodes.clear()
             app.nodeManager.clearHistory()
             app.nodeManager.saveCanvasState()
-            app.canvasManager.redraw()
+            await app.nodeManager.loadCanvasState();
+            resetView()
+            // app.canvasManager.redraw()
           }
 
           if (e.key === " ") {

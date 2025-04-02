@@ -36,12 +36,12 @@ jobs:
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm run dist
 
-      - name: 上传构建产物到 Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: |
-            dist/*.exe
-            dist/*.zip
-            dist/*.yml
-            dist/*.blockmap
+      # - name: 上传构建产物到 Release
+      #   uses: softprops/action-gh-release@v1
+      #   if: startsWith(github.ref, 'refs/tags/')
+      #   with:
+      #     files: |
+      #       dist/*.exe
+      #       dist/*.zip
+      #       dist/*.yml
+      #       dist/*.blockmap

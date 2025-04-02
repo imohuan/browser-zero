@@ -8,24 +8,25 @@ importers:
 
   .:
     dependencies:
-      electron:
-        specifier: 35.1.2
-        version: 35.1.2
-      electron-builder:
-        specifier: 26.0.12
-        version: 26.0.12(electron-builder-squirrel-windows@26.0.12)
       electron-is-dev:
         specifier: ^3.0.1
         version: 3.0.1
       electron-updater:
         specifier: ^6.6.2
         version: 6.6.2
-      nodemon:
-        specifier: 3.1.9
-        version: 3.1.9
       playwright:
         specifier: ^1.51.1
         version: 1.51.1
+    devDependencies:
+      electron:
+        specifier: 35.1.2
+        version: 35.1.2
+      electron-builder:
+        specifier: 26.0.12
+        version: 26.0.12(electron-builder-squirrel-windows@26.0.12)
+      nodemon:
+        specifier: 3.1.9
+        version: 3.1.9
 
 packages:
 

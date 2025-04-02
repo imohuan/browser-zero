@@ -1036,6 +1036,11 @@ class NodeManager {
         node.selected = false
         this.nodes.set(nodeId, node)
       }
+
+      if (this.nodes.size === 0) {
+        this.addNode(0, 0, { url: "https://www.baidu.com" })
+      }
+
       // 更新节点计数器
       this.updateNodeCounter();
       // 清除选中状态

@@ -20,10 +20,10 @@ ensureDir(screenshotDir)
 // 设置应用缓存目录
 app.setPath('userData', cacheDir)
 
-if (isDev) {
-  Object.defineProperty(app, 'isPackaged', { get: () => true });
-  autoUpdater.updateConfigPath = path.join(appPath, 'dev-app-update.yml');
-}
+// if (isDev) {
+//   Object.defineProperty(app, 'isPackaged', { get: () => true });
+//   autoUpdater.updateConfigPath = path.join(appPath, 'dev-app-update.yml');
+// }
 
 
 // https://github.com/imohuan/browser-zero/releases/download/v1.0.0/latest.yml

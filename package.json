@@ -27,7 +27,10 @@
     "playwright": "^1.51.1"
   },
   "build": {
-    "publish": null,
+    "publish": {
+      "provider": "github",
+      "releaseType": "release"
+    },
     "appId": "com.zerog.canvas",
     "productName": "ZeroG_Canvas",
     "icon": "src/favicon.ico",

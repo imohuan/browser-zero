@@ -1,12 +1,13 @@
-const { app, session, BrowserWindow, WebContentsView, ipcMain, } = require('electron')
+const { app, session, BrowserWindow, WebContentsView, ipcMain, dialog } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const { autoUpdater } = require('electron-updater');
+const isDev = require('electron-is-dev');
 
 const nodeViews = new Map()
 
 // 根据环境设置缓存目录
-const isDev = process.env.NODE_ENV === 'development'
+
 const appPath = isDev ? __dirname : path.dirname(app.getPath('exe'))
 const cacheDir = path.join(appPath, '../cache')
 const stateDir = path.join(cacheDir, 'state')
@@ -25,13 +26,22 @@ function ensureDir(dir) {
   }
 }
 
+if (isDev) autoUpdater.updateConfigPath = path.join(appPath, 'dev-app-update.yml');
 
 autoUpdater.on('update-available', () => {
-  console.log("有更新可用 1");
+  console.log("有更新可用");
 });
 
 autoUpdater.on('update-downloaded', () => {
+  // 给用户一个提示，然后重启应用；或者直接重启也可以，只是这样会显得很突兀
   console.log("更新已下载，准备安装");
+  dialog.showMessageBox({
+    title: '安装更新',
+    message: '更新下载完毕，应用将重启并进行安装'
+  }).then(() => {
+    // 退出并安装应用
+    setImmediate(() => autoUpdater.quitAndInstall());
+  });
 });
 
 async function createMainWindow() {

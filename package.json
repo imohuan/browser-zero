@@ -6,7 +6,8 @@
   "scripts": {
     "start": "chcp 65001 && electron .",
     "dev": "nodemon --exec electron .",
-    "build": "electron-builder"
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder -p always"
   },
   "keywords": [
     "electron",
@@ -18,6 +19,8 @@
   "devDependencies": {
     "electron": "35.1.2",
     "electron-builder": "26.0.12",
+    "electron-is-dev": "^3.0.1",
+    "electron-updater": "^6.6.2",
     "nodemon": "3.1.9"
   },
   "dependencies": {
@@ -26,6 +29,7 @@
   "build": {
     "appId": "com.zerog.canvas",
     "productName": "ZeroG Canvas",
+    "icon": "src/favicon.ico",
     "files": [
       "src/**/*",
       "package.json"
@@ -34,12 +38,21 @@
       "output": "dist"
     },
     "mac": {
-      "category": "public.app-category.productivity"
+      "category": "public.app-category.productivity",
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "target": [
+        "dmg",
+        "zip"
+      ]
     },
     "win": {
+      "icon": "src/favicon.png",
       "target": [
-        "nsis"
-      ]
+        "nsis",
+        "zip"
+      ],
+      "verifyUpdateCodeSignature": false,
+      "artifactName": "${productName}-Web-Setup-${version}.${ext}"
     },
     "linux": {
       "target": "AppImage"
@@ -50,6 +63,7 @@
     },
     "nsis": {
       "oneClick": false,
+      "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true

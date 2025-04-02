@@ -25,7 +25,8 @@ if (isDev) {
   autoUpdater.updateConfigPath = path.join(appPath, 'dev-app-update.yml');
 }
 // https://github.com/imohuan/browser-zero/releases/download/v1.0.0/latest.yml
-
+// https://github.com/imohuan/browser-zero/releases/download/v0.0.12/ZeroG.Canvas-Web-Setup-1.0.1.exe.blockmap
+// https://github.com/imohuan/browser-zero/releases/download/v0.0.12/ZeroG-Canvas-Web-Setup-1.0.0.exe.blockmap
 /** 确保地址存在 */
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) {

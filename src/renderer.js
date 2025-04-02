@@ -1,14 +1,23 @@
 const { ipcRenderer } = require('electron');
 const Application = require('./models/Application');
+const { getRendererLogger } = require('./lib/renderer-logger');
+
+// 初始化日志系统
+const logger = getRendererLogger();
+logger.info('渲染进程启动');
+
 // 应用实例
 let app = null;
 
 ipcRenderer.on("window-focus", () => {
   document.body.classList.remove("electron-drag")
+  logger.debug('窗口获得焦点');
 })
 
 ipcRenderer.on("open-url", (event, { nodeId, url }) => {
   if (!app) return
+  logger.info(`打开URL: ${url}`, { nodeId });
+
   const node = app.nodeManager.nodes.get(nodeId)
   const x = node.x + node.width + 1000
   const y = node.y
@@ -31,6 +40,8 @@ ipcRenderer.on("open-url", (event, { nodeId, url }) => {
 
 // 等待DOM加载完成
 document.addEventListener('DOMContentLoaded', () => {
+  logger.info('DOM加载完成');
+
   // 创建Vue应用
   const { createApp, ref, reactive, onMounted, nextTick } = Vue;
   // 创建根组件
@@ -47,29 +58,44 @@ document.addEventListener('DOMContentLoaded', () => {
       const showSettings = ref(false);
       // 通知系统引用
       const notificationSystem = ref(null);
+      // 显示日志查看器
+      const showLogViewer = ref(false);
 
       // 初始化应用
       onMounted(async () => {
-        await nextTick();
-        // 初始化应用
-        app = new Application(canvas.value);
-        // 设置通知回调 - 执行通知组件上的方法
-        app.setNotifyCallback((message, type) => {
-          if (notificationSystem.value) notificationSystem.value.showNotification(message, type);
-        });
-        // 初始化应用
-        await app.initialize();
-        // 同步状态
-        Object.assign(toolbarState, app.toolbarState);
-        Object.assign(appSettings, app.settingsManager.getSettings());
-        setupCanvasEvents();
-        setupWindowDragEvents();
-        setupWindowEvents()
-        resetView()
+        try {
+          logger.info('开始初始化应用');
+          await nextTick();
+          // 初始化应用
+          app = new Application(canvas.value);
+          // 设置通知回调 - 执行通知组件上的方法
+          app.setNotifyCallback((message, type) => {
+            if (notificationSystem.value) notificationSystem.value.showNotification(message, type);
+          });
+          // 初始化应用
+          await app.initialize();
+          // 同步状态
+          Object.assign(toolbarState, app.toolbarState);
+          Object.assign(appSettings, app.settingsManager.getSettings());
+
+          // 设置各种事件处理
+          setupCanvasEvents();
+          setupWindowDragEvents();
+          setupWindowEvents();
+          resetView();
+
+          logger.info('应用初始化完成');
+        } catch (error) {
+          logger.error('应用初始化失败', { message: error.message, stack: error.stack });
+          if (notificationSystem.value) {
+            notificationSystem.value.showNotification('应用初始化失败: ' + error.message, 'error');
+          }
+        }
       });
 
       // 设置窗口事件
       const setupWindowEvents = () => {
+        logger.debug('设置窗口事件');
         window.addEventListener("keydown", async (e) => {
           if (e.key === "Tab") {
             e.preventDefault()
@@ -79,12 +105,14 @@ document.addEventListener('DOMContentLoaded', () => {
           if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
             e.preventDefault()
             e.stopPropagation()
+            logger.info('刷新应用');
             await app.nodeManager.saveCanvasState();
             await ipcRenderer.invoke('remove-web-contents-view-all')
             setTimeout(() => location.reload(), 200);
           }
 
           if (e.ctrlKey && e.key === 'n') {
+            logger.info('清除所有节点');
             await ipcRenderer.invoke('remove-web-contents-view-all')
             app.nodeManager.nodes.clear()
             app.nodeManager.clearHistory()
@@ -96,6 +124,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
           if (e.key === " ") {
             resetView()
+          }
+
+          if (e.ctrlKey && e.key === 'l') {
+            e.preventDefault();
+            showLogViewer.value = !showLogViewer.value;
+            logger.info('切换日志查看器', { show: showLogViewer.value });
           }
 
           if (e.ctrlKey) {
@@ -119,6 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // 设置窗口拖拽事件
       const setupWindowDragEvents = () => {
+        logger.debug('设置窗口拖拽事件');
         document.addEventListener("keydown", (e) => {
           if (e.altKey && e.code === "AltLeft") document.body.classList.add("electron-drag")
         })
@@ -129,6 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // 设置画布事件
       const setupCanvasEvents = () => {
+        logger.debug('设置画布事件');
         const canvasEl = canvas.value;
 
         // 鼠标状态变化
@@ -324,6 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // 切换工具
       const switchTool = (toolName) => {
         if (!app) return;
+        logger.debug(`切换工具: ${toolName}`);
         app.switchTool(toolName);
         toolbarState.currentTool = toolName;
       };
@@ -339,7 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // 处理添加节点
       const handleAddNode = () => {
         if (!app) return;
-
+        logger.info('添加新节点');
         // 在画布中心添加节点
         const { width, height } = app.canvasManager.canvas;
         app.addNode(width / 2, height / 2);
@@ -358,7 +395,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // 打开设置模态框
       const openSettingsModal = () => {
         if (!app) return;
-        // 更新设置
+        // 更新设置 
         ipcRenderer.invoke("set-web-contents-view-visible", { status: false })
         Object.assign(appSettings, app.settingsManager.getSettings());
         showSettings.value = true;
@@ -449,6 +486,19 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch { }
       }
 
+      // 显示日志查看器
+      const openLogViewer = () => {
+        logger.debug('打开日志查看器');
+        showLogViewer.value = true;
+      };
+
+      // 处理日志查看器的通知
+      const handleLogNotification = (message, type) => {
+        if (notificationSystem.value) {
+          notificationSystem.value.showNotification(message, type);
+        }
+      };
+
       return {
         canvas,
         toolbarState,
@@ -461,7 +511,10 @@ document.addEventListener('DOMContentLoaded', () => {
         resetView,
         openSettingsModal,
         closeSettingsModal,
-        saveSettings
+        saveSettings,
+        showLogViewer,
+        openLogViewer,
+        handleLogNotification
       };
     }
   };
@@ -473,6 +526,7 @@ document.addEventListener('DOMContentLoaded', () => {
   vueApp.component('sidebar-menu', SidebarMenu);
   vueApp.component('settings-modal', SettingsModal);
   vueApp.component('notification-system', NotificationSystem);
+  vueApp.component('log-viewer', LogViewer);
   // 挂载应用
   vueApp.mount('#app');
 });

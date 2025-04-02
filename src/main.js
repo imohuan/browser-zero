@@ -2,8 +2,35 @@ const { app, session, BrowserWindow, WebContentsView, ipcMain, dialog } = requir
 const path = require('path')
 const fs = require('fs')
 const { autoUpdater } = require('electron-updater');
+const { getLogger, LogLevel } = require('./lib/logger');
 
-const isDev = 'ELECTRON_IS_DEV' in process.env ? Number.parseInt(env.ELECTRON_IS_DEV, 10) === 1 : !app.isPackaged;
+// 初始化日志系统
+const logger = getLogger();
+
+// 设置全局未捕获异常处理
+process.on('uncaughtException', (error) => {
+  logger.fatal('未捕获的异常', {
+    message: error.message,
+    stack: error.stack
+  });
+
+  // 显示错误对话框
+  if (app.isReady()) {
+    dialog.showErrorBox(
+      '应用发生错误',
+      `发生了一个未捕获的错误: ${error.message}\n\n详细信息已记录到日志文件中。`
+    );
+  }
+});
+
+// 捕获未处理的Promise拒绝
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('未处理的Promise拒绝', {
+    reason: reason ? (reason.stack || reason.message || reason) : 'unknown',
+  });
+});
+
+const isDev = 'ELECTRON_IS_DEV' in process.env ? Number.parseInt(process.env.ELECTRON_IS_DEV, 10) === 1 : !app.isPackaged;
 const nodeViews = new Map()
 // 根据环境设置缓存目录
 
@@ -35,12 +62,12 @@ function ensureDir(dir) {
 }
 
 autoUpdater.on('update-available', () => {
-  console.log("有更新可用");
+  logger.info("有更新可用");
 });
 
 autoUpdater.on('update-downloaded', () => {
   // 给用户一个提示，然后重启应用；或者直接重启也可以，只是这样会显得很突兀
-  console.log("更新已下载，准备安装");
+  logger.info("更新已下载，准备安装");
   dialog.showMessageBox({
     title: '安装更新',
     message: '更新下载完毕，应用将重启并进行安装'
@@ -50,7 +77,90 @@ autoUpdater.on('update-downloaded', () => {
   });
 });
 
+// 添加用于记录从渲染进程发送的日志
+ipcMain.on('log-message', (event, logData) => {
+  const { level, message, data, source } = logData;
+  const formattedMessage = source ? `[${source}] ${message}` : message;
+
+  switch (level) {
+    case LogLevel.DEBUG:
+      logger.debug(formattedMessage, data);
+      break;
+    case LogLevel.INFO:
+      logger.info(formattedMessage, data);
+      break;
+    case LogLevel.WARN:
+      logger.warn(formattedMessage, data);
+      break;
+    case LogLevel.ERROR:
+      logger.error(formattedMessage, data);
+      break;
+    case LogLevel.FATAL:
+      logger.fatal(formattedMessage, data);
+      break;
+    default:
+      logger.info(formattedMessage, data);
+  }
+});
+
+// 获取最新日志
+ipcMain.handle('get-latest-logs', async () => {
+  try {
+    const logFile = logger.getLatestLogFile();
+    if (fs.existsSync(logFile)) {
+      const content = fs.readFileSync(logFile, 'utf8');
+      const logs = content.split('\n').filter(line => line.trim() !== '');
+      return { success: true, logs };
+    } else {
+      return { success: false, error: '日志文件不存在' };
+    }
+  } catch (error) {
+    logger.error('读取日志文件失败', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// 打开日志文件
+ipcMain.handle('open-log-file', () => {
+  try {
+    logger.openLogFile();
+    return { success: true };
+  } catch (error) {
+    logger.error('打开日志文件失败', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// 创建崩溃日志窗口
+function createCrashLogWindow(errorInfo) {
+  logger.info('创建崩溃日志窗口');
+
+  const crashWindow = new BrowserWindow({
+    width: 900,
+    height: 700,
+    frame: true,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    }
+  });
+
+  // 加载特殊的崩溃页面
+  crashWindow.loadFile(path.join(__dirname, 'crash.html'));
+
+  // 传递崩溃信息
+  crashWindow.webContents.on('did-finish-load', () => {
+    crashWindow.webContents.send('crash-info', {
+      error: errorInfo,
+      logFilePath: logger.getLatestLogFile()
+    });
+  });
+
+  return crashWindow;
+}
+
 async function createMainWindow() {
+  logger.info('创建主窗口');
   autoUpdater.checkForUpdatesAndNotify();
 
   // 创建主窗口，无边框风格
@@ -84,6 +194,47 @@ async function createMainWindow() {
   if (isDev) {
     mainWindow.webContents.openDevTools()
   }
+
+  // 监听渲染进程崩溃事件
+  mainWindow.webContents.on('crashed', (event) => {
+    const errorInfo = {
+      type: 'renderer-crashed',
+      message: '渲染进程崩溃'
+    };
+
+    logger.fatal('渲染进程崩溃', errorInfo);
+    createCrashLogWindow(errorInfo);
+  });
+
+  // 监听渲染进程挂起事件
+  mainWindow.webContents.on('unresponsive', () => {
+    const errorInfo = {
+      type: 'renderer-unresponsive',
+      message: '渲染进程无响应'
+    };
+
+    logger.error('渲染进程无响应', errorInfo);
+    dialog.showMessageBox(mainWindow, {
+      type: 'warning',
+      title: '应用无响应',
+      message: '应用似乎已经停止响应。',
+      buttons: ['等待', '查看日志', '强制关闭'],
+      defaultId: 0
+    }).then(({ response }) => {
+      if (response === 1) {
+        // 查看日志
+        logger.openLogFile();
+      } else if (response === 2) {
+        // 强制关闭
+        app.exit(1);
+      }
+    });
+  });
+
+  // 监听渲染进程恢复响应
+  mainWindow.webContents.on('responsive', () => {
+    logger.info('渲染进程恢复响应');
+  });
 
   // 添加窗口控制处理
   ipcMain.handle('minimize-window', () => {
@@ -226,6 +377,7 @@ async function createWebContentsView(mainWindow, option) {
 }
 
 app.whenReady().then(async () => {
+  logger.info('应用准备就绪');
   const mainWindow = await createMainWindow()
   mainWindow.contentView.setBorderRadius(100)
   mainWindow.on('focus', () => {
@@ -444,16 +596,19 @@ app.whenReady().then(async () => {
 
   // 应用退出时清理资源
   app.on('will-quit', () => {
+    logger.info('应用即将退出');
     app.isQuitting = true
   })
 })
 
 // 在macOS上，当所有窗口关闭时退出应用程序
 app.on('window-all-closed', () => {
+  logger.info('所有窗口已关闭');
   if (process.platform !== 'darwin') app.quit()
 })
 
 // 在macOS上，当应用程序图标被点击时重新创建窗口
 app.on('activate', () => {
+  logger.info('应用被激活');
   if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
 })

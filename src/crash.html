@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>应用崩溃</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f8f9fa;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .header {
+      background-color: #dc3545;
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .container {
+      flex: 1;
+      padding: 20px;
+      max-width: 900px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .error-box {
+      background-color: #fff;
+      border-radius: 5px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .error-title {
+      color: #dc3545;
+      font-size: 18px;
+      margin-top: 0;
+      margin-bottom: 15px;
+    }
+
+    .error-detail {
+      background-color: #f8f9fa;
+      border-left: 3px solid #dc3545;
+      padding: 10px 15px;
+      font-family: 'Courier New', monospace;
+      overflow-wrap: break-word;
+      margin-bottom: 15px;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.2s;
+    }
+
+    .btn-primary {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: #0069d9;
+    }
+
+    .btn-secondary {
+      background-color: #6c757d;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background-color: #5a6268;
+    }
+
+    .btn-danger {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background-color: #c82333;
+    }
+
+    .log-content {
+      height: 300px;
+      overflow-y: auto;
+      background-color: #2d2d2d;
+      color: #f8f8f2;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+    }
+
+    .footer {
+      padding: 15px;
+      text-align: center;
+      font-size: 12px;
+      color: #6c757d;
+      border-top: 1px solid #e9ecef;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <h1>应用意外终止</h1>
+  </div>
+
+  <div class="container">
+    <div class="error-box">
+      <h2 class="error-title">发生了一个错误</h2>
+      <p>应用程序遇到了一个问题，导致意外终止。以下是有关错误的详细信息：</p>
+      <div class="error-detail" id="error-message">
+        正在获取错误信息...
+      </div>
+      <p>您可以尝试重新启动应用，或者查看日志文件以获取更多详细信息。</p>
+    </div>
+
+    <div class="error-box">
+      <h2 class="error-title">最近的日志信息</h2>
+      <div class="log-content" id="log-content">
+        正在加载日志信息...
+      </div>
+    </div>
+
+    <div class="action-buttons">
+      <button class="btn btn-primary" id="btn-restart">重新启动应用</button>
+      <button class="btn btn-secondary" id="btn-copy-logs">复制日志</button>
+      <button class="btn btn-secondary" id="btn-open-log">打开日志文件</button>
+      <button class="btn btn-danger" id="btn-exit">退出</button>
+    </div>
+  </div>
+
+  <div class="footer">
+    ZeroG 崩溃报告
+  </div>
+
+  <script>
+    // 渲染进程通信
+    const { ipcRenderer } = require('electron');
+    const fs = require('fs');
+    const { shell } = require('electron');
+    const path = require('path');
+
+    let logFilePath = '';
+    let logLines = [];
+
+    // 接收崩溃信息
+    ipcRenderer.on('crash-info', (event, data) => {
+      const { error, logFilePath: logPath } = data;
+      logFilePath = logPath;
+
+      // 显示错误信息
+      const errorMessageEl = document.getElementById('error-message');
+      errorMessageEl.textContent = `错误类型: ${error.type}\n错误信息: ${error.message}`;
+
+      // 加载日志文件
+      loadLogFile(logFilePath);
+    });
+
+    // 加载日志文件
+    function loadLogFile(filePath) {
+      try {
+        if (fs.existsSync(filePath)) {
+          const content = fs.readFileSync(filePath, 'utf8');
+          logLines = content.split('\n').filter(line => line.trim() !== '');
+
+          // 只显示最后100行
+          const lastLogs = logLines.slice(-100);
+
+          const logContentEl = document.getElementById('log-content');
+          logContentEl.textContent = lastLogs.join('\n');
+
+          // 滚动到底部
+          logContentEl.scrollTop = logContentEl.scrollHeight;
+        } else {
+          document.getElementById('log-content').textContent = '无法找到日志文件';
+        }
+      } catch (error) {
+        document.getElementById('log-content').textContent = `读取日志文件失败: ${error.message}`;
+      }
+    }
+
+    // 按钮事件
+    document.getElementById('btn-restart').addEventListener('click', () => {
+      ipcRenderer.send('restart-app');
+    });
+
+    document.getElementById('btn-copy-logs').addEventListener('click', () => {
+      navigator.clipboard.writeText(logLines.join('\n'))
+        .then(() => {
+          alert('日志已复制到剪贴板');
+        })
+        .catch(err => {
+          alert('复制到剪贴板失败: ' + err);
+        });
+    });
+
+    document.getElementById('btn-open-log').addEventListener('click', () => {
+      if (logFilePath) {
+        shell.openPath(logFilePath).catch(err => {
+          alert('无法打开日志文件: ' + err);
+        });
+      } else {
+        alert('日志文件路径不可用');
+      }
+    });
+
+    document.getElementById('btn-exit').addEventListener('click', () => {
+      ipcRenderer.send('exit-app');
+    });
+  </script>
+</body>
+
+</html>

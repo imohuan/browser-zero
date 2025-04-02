@@ -49,7 +49,8 @@
       @switch-tool="switchTool"
       @add-node="handleAddNode"
       @reset-view="resetView"
-      @open-settings="openSettingsModal">
+      @open-settings="openSettingsModal"
+      @open-logs="openLogViewer">
     </sidebar-menu>
     <settings-modal
       v-if="showSettings"
@@ -58,6 +59,12 @@
       @close="closeSettingsModal"
       @save="saveSettings">
     </settings-modal>
+    <log-viewer
+      v-if="showLogViewer"
+      :visible="showLogViewer"
+      @update:visible="showLogViewer = $event"
+      @notification="handleLogNotification">
+    </log-viewer>
     <notification-system ref="notificationSystem"></notification-system>
   </script>
 
@@ -67,6 +74,7 @@
   <script src="components/SidebarMenu.js"></script>
   <script src="components/SettingsModal.js"></script>
   <script src="components/NotificationSystem.js"></script>
+  <script src="components/LogViewer.js"></script>
   <script src="hooks/index.js"></script>
 
   <!-- 主应用 JS -->

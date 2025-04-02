@@ -1,0 +1,6 @@
+{
+  "publish": {
+    "provider": "github",
+    "url": "https://github.com/imohuan/browser-zero"
+  }
+}

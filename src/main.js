@@ -4,8 +4,9 @@ const fs = require('fs')
 const { autoUpdater } = require('electron-updater');
 const isDev = require('electron-is-dev');
 
-const nodeViews = new Map()
 
+
+const nodeViews = new Map()
 // 根据环境设置缓存目录
 
 const appPath = isDev ? __dirname : path.dirname(app.getPath('exe'))
@@ -19,14 +20,16 @@ ensureDir(screenshotDir)
 // 设置应用缓存目录
 app.setPath('userData', cacheDir)
 
+if (isDev) {
+  autoUpdater.updateConfigPath = path.join(appPath, 'dev-app-update.yml');
+}
+
 /** 确保地址存在 */
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true })
   }
 }
-
-if (isDev) autoUpdater.updateConfigPath = path.join(appPath, 'dev-app-update.yml');
 
 autoUpdater.on('update-available', () => {
   console.log("有更新可用");

@@ -44,3 +44,4 @@ jobs:
             dist/*.exe
             dist/*.zip
             dist/*.yml
+            dist/*.blockmap

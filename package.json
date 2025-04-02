@@ -1,6 +1,6 @@
 {
   "name": "zerog-canvas",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "基于Electron和Playwright的无限画布应用",
   "main": "src/main.js",
   "scripts": {

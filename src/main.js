@@ -27,7 +27,7 @@ function ensureDir(dir) {
 
 
 autoUpdater.on('update-available', () => {
-  console.log("有更新可用");
+  console.log("有更新可用 1");
 });
 
 autoUpdater.on('update-downloaded', () => {

@@ -7,29 +7,6 @@ const { getLogger, LogLevel } = require('./lib/logger');
 // 初始化日志系统
 const logger = getLogger();
 
-// 设置全局未捕获异常处理
-process.on('uncaughtException', (error) => {
-  logger.fatal('未捕获的异常', {
-    message: error.message,
-    stack: error.stack
-  });
-
-  // 显示错误对话框
-  if (app.isReady()) {
-    dialog.showErrorBox(
-      '应用发生错误',
-      `发生了一个未捕获的错误: ${error.message}\n\n详细信息已记录到日志文件中。`
-    );
-  }
-});
-
-// 捕获未处理的Promise拒绝
-process.on('unhandledRejection', (reason, promise) => {
-  logger.error('未处理的Promise拒绝', {
-    reason: reason ? (reason.stack || reason.message || reason) : 'unknown',
-  });
-});
-
 const isDev = 'ELECTRON_IS_DEV' in process.env ? Number.parseInt(process.env.ELECTRON_IS_DEV, 10) === 1 : !app.isPackaged;
 const nodeViews = new Map()
 // 根据环境设置缓存目录
@@ -50,10 +27,6 @@ app.setPath('userData', cacheDir)
 //   autoUpdater.updateConfigPath = path.join(appPath, 'update.yml');
 // }
 
-
-// https://github.com/imohuan/browser-zero/releases/download/v1.0.0/latest.yml
-// https://github.com/imohuan/browser-zero/releases/download/v0.0.12/ZeroG.Canvas-Web-Setup-1.0.1.exe.blockmap
-// https://github.com/imohuan/browser-zero/releases/download/v0.0.12/ZeroG-Canvas-Web-Setup-1.0.0.exe.blockmap
 /** 确保地址存在 */
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) {
@@ -133,7 +106,27 @@ ipcMain.handle('open-log-file', () => {
 
 // 创建崩溃日志窗口
 function createCrashLogWindow(errorInfo) {
-  logger.info('创建崩溃日志窗口');
+  logger.info('创建崩溃日志窗口', errorInfo);
+
+  // 确保错误信息是有效的对象
+  if (!errorInfo) {
+    errorInfo = {
+      type: 'unknown',
+      message: '未知错误'
+    };
+  }
+
+  // 如果错误是Error对象，提取其信息
+  if (errorInfo instanceof Error) {
+    errorInfo = {
+      type: errorInfo.name || 'Error',
+      message: errorInfo.message,
+      stack: errorInfo.stack
+    };
+  }
+
+  // 刷新日志，确保所有内容都被写入
+  logger.flush(true);
 
   const crashWindow = new BrowserWindow({
     width: 900,
@@ -148,12 +141,27 @@ function createCrashLogWindow(errorInfo) {
   // 加载特殊的崩溃页面
   crashWindow.loadFile(path.join(__dirname, 'crash.html'));
 
+  // 禁用崩溃页面的菜单
+  crashWindow.setMenu(null);
+
   // 传递崩溃信息
   crashWindow.webContents.on('did-finish-load', () => {
     crashWindow.webContents.send('crash-info', {
       error: errorInfo,
       logFilePath: logger.getLatestLogFile()
     });
+  });
+
+  // 防止崩溃窗口关闭导致应用退出
+  crashWindow.on('close', (e) => {
+    // 如果是明确要求退出，则允许关闭
+    if (app.isQuitting) {
+      return;
+    }
+
+    // 否则只隐藏窗口
+    e.preventDefault();
+    crashWindow.hide();
   });
 
   return crashWindow;
@@ -378,6 +386,10 @@ async function createWebContentsView(mainWindow, option) {
 
 app.whenReady().then(async () => {
   logger.info('应用准备就绪');
+
+  // 设置全局异常处理
+  setupGlobalErrorHandlers();
+
   const mainWindow = await createMainWindow()
   mainWindow.contentView.setBorderRadius(100)
   mainWindow.on('focus', () => {
@@ -612,3 +624,81 @@ app.on('activate', () => {
   logger.info('应用被激活');
   if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
 })
+
+// 添加崩溃页面相关的IPC处理程序
+ipcMain.on('restart-app', () => {
+  logger.info('用户请求重启应用');
+  // 先关闭所有窗口
+  BrowserWindow.getAllWindows().forEach(window => {
+    if (!window.isDestroyed()) {
+      window.close();
+    }
+  });
+
+  // 重启应用
+  app.relaunch();
+  app.exit(0);
+});
+
+ipcMain.on('exit-app', () => {
+  logger.info('用户请求退出应用');
+  app.exit(0);
+});
+
+// 设置全局错误处理程序
+function setupGlobalErrorHandlers() {
+  // 主进程未捕获异常处理
+  process.on('uncaughtException', (error) => {
+    logger.fatal('主进程未捕获的异常', {
+      message: error.message,
+      stack: error.stack
+    });
+
+    // 如果应用已经准备就绪，显示崩溃窗口
+    if (app.isReady()) {
+      createCrashLogWindow({
+        type: 'uncaught-exception',
+        message: error.message,
+        stack: error.stack
+      });
+    } else {
+      // 否则只显示错误对话框
+      dialog.showErrorBox(
+        '应用启动失败',
+        `启动过程中发生错误: ${error.message}\n\n请检查日志文件获取更多信息。`
+      );
+      app.exit(1);
+    }
+  });
+
+  // 未处理的Promise拒绝
+  process.on('unhandledRejection', (reason, promise) => {
+    const reasonMessage = reason instanceof Error ? reason.message : String(reason);
+    const reasonStack = reason instanceof Error ? reason.stack : null;
+
+    logger.error('主进程未处理的Promise拒绝', {
+      reason: reasonMessage,
+      stack: reasonStack
+    });
+
+    // 通常，未处理的Promise拒绝不会导致应用崩溃，所以这里只记录日志
+  });
+
+  // 如果是开发环境，还可以监控内存使用
+  if (isDev) {
+    setInterval(() => {
+      const memoryUsage = process.memoryUsage();
+      const memoryUsageMB = {
+        rss: Math.round(memoryUsage.rss / 1024 / 1024),
+        heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024),
+        heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024),
+        external: Math.round(memoryUsage.external / 1024 / 1024)
+      };
+
+      // 如果内存使用超过一定阈值，记录警告日志
+      if (memoryUsageMB.rss > 500) { // 500MB
+        logger.warn('内存使用量较高', memoryUsageMB);
+      }
+    }, 60000); // 每分钟检查一次
+  }
+}

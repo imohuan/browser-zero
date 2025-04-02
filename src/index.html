@@ -62,7 +62,7 @@
     <log-viewer
       v-if="showLogViewer"
       :visible="showLogViewer"
-      @update:visible="showLogViewer = $event"
+      @update:visible="updateLogViewerVisible"
       @notification="handleLogNotification">
     </log-viewer>
     <notification-system ref="notificationSystem"></notification-system>

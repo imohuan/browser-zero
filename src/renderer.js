@@ -128,6 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
           if (e.ctrlKey && e.key === 'l') {
             e.preventDefault();
+            ipcRenderer.invoke("set-web-contents-view-visible", { status: showLogViewer.value })
             showLogViewer.value = !showLogViewer.value;
             logger.info('切换日志查看器', { show: showLogViewer.value });
           }
@@ -490,7 +491,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const openLogViewer = () => {
         logger.debug('打开日志查看器');
         showLogViewer.value = true;
+        ipcRenderer.invoke("set-web-contents-view-visible", { status: false })
       };
+
+      const updateLogViewerVisible = (value) => {
+        showLogViewer.value = value
+        ipcRenderer.invoke("set-web-contents-view-visible", { status: !value })
+      }
 
       // 处理日志查看器的通知
       const handleLogNotification = (message, type) => {
@@ -514,7 +521,8 @@ document.addEventListener('DOMContentLoaded', () => {
         saveSettings,
         showLogViewer,
         openLogViewer,
-        handleLogNotification
+        handleLogNotification,
+        updateLogViewerVisible
       };
     }
   };

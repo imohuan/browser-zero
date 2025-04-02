@@ -144,8 +144,8 @@
 
     <div class="error-box">
       <h2 class="error-title">最近的日志信息</h2>
-      <div class="log-content" id="log-content">
-        正在加载日志信息...
+      <div class="log-content">
+        <pre id="log-content">正在加载日志信息...</pre>
       </div>
     </div>
 
@@ -173,66 +173,119 @@
 
     // 接收崩溃信息
     ipcRenderer.on('crash-info', (event, data) => {
-      const { error, logFilePath: logPath } = data;
-      logFilePath = logPath;
+      try {
+        console.log('收到崩溃信息:', data);
+        const { error, logFilePath: logPath } = data;
+        logFilePath = logPath;
 
-      // 显示错误信息
-      const errorMessageEl = document.getElementById('error-message');
-      errorMessageEl.textContent = `错误类型: ${error.type}\n错误信息: ${error.message}`;
+        // 显示错误信息
+        const errorMessageEl = document.getElementById('error-message');
+        errorMessageEl.textContent = `错误类型: ${error.type || '未知'}\n错误信息: ${error.message || '未提供错误详情'}`;
 
-      // 加载日志文件
-      loadLogFile(logFilePath);
+        // 加载日志文件
+        loadLogFile(logFilePath);
+      } catch (err) {
+        console.error('处理崩溃信息失败:', err);
+        document.getElementById('error-message').textContent = `处理崩溃信息失败: ${err.message}`;
+      }
     });
 
     // 加载日志文件
     function loadLogFile(filePath) {
       try {
+        console.log('尝试加载日志文件:', filePath);
         if (fs.existsSync(filePath)) {
           const content = fs.readFileSync(filePath, 'utf8');
           logLines = content.split('\n').filter(line => line.trim() !== '');
 
-          // 只显示最后100行
-          const lastLogs = logLines.slice(-100);
+          // 只显示最后100行，优先显示错误和警告日志
+          const errorLogs = logLines.filter(line => line.includes('[ERROR]') || line.includes('[FATAL]'));
+          const warnLogs = logLines.filter(line => line.includes('[WARN]'));
+          const otherLogs = logLines.filter(line =>
+            !line.includes('[ERROR]') && !line.includes('[FATAL]') && !line.includes('[WARN]')
+          );
+
+          // 组合日志，确保错误和警告优先显示
+          let displayLogs = [];
+          if (errorLogs.length > 0) {
+            displayLogs = displayLogs.concat(errorLogs);
+          }
+          if (warnLogs.length > 0) {
+            displayLogs = displayLogs.concat(warnLogs);
+          }
+
+          // 添加最近的其他日志，总数保持在100行以内
+          const remainingLines = 100 - displayLogs.length;
+          if (remainingLines > 0 && otherLogs.length > 0) {
+            displayLogs = displayLogs.concat(otherLogs.slice(-remainingLines));
+          }
+
+          // 如果总日志不足100行，则全部显示
+          if (displayLogs.length === 0) {
+            displayLogs = logLines.slice(-100);
+          }
 
           const logContentEl = document.getElementById('log-content');
-          logContentEl.textContent = lastLogs.join('\n');
+          logContentEl.textContent = displayLogs.join('\n');
 
           // 滚动到底部
-          logContentEl.scrollTop = logContentEl.scrollHeight;
+          logContentEl.parentElement.scrollTop = logContentEl.parentElement.scrollHeight;
         } else {
+          console.warn('日志文件不存在:', filePath);
           document.getElementById('log-content').textContent = '无法找到日志文件';
         }
       } catch (error) {
+        console.error('读取日志文件失败:', error);
         document.getElementById('log-content').textContent = `读取日志文件失败: ${error.message}`;
       }
     }
 
     // 按钮事件
     document.getElementById('btn-restart').addEventListener('click', () => {
+      console.log('点击重启应用按钮');
       ipcRenderer.send('restart-app');
     });
 
     document.getElementById('btn-copy-logs').addEventListener('click', () => {
-      navigator.clipboard.writeText(logLines.join('\n'))
-        .then(() => {
-          alert('日志已复制到剪贴板');
-        })
-        .catch(err => {
-          alert('复制到剪贴板失败: ' + err);
-        });
+      console.log('点击复制日志按钮');
+      try {
+        const logContent = document.getElementById('log-content').textContent;
+        navigator.clipboard.writeText(logContent)
+          .then(() => {
+            alert('日志已复制到剪贴板');
+          })
+          .catch(err => {
+            console.error('复制到剪贴板失败:', err);
+            alert('复制到剪贴板失败: ' + err.message);
+          });
+      } catch (err) {
+        console.error('复制日志时出错:', err);
+        alert('复制日志时出错: ' + err.message);
+      }
     });
 
     document.getElementById('btn-open-log').addEventListener('click', () => {
+      console.log('点击打开日志文件按钮');
       if (logFilePath) {
-        shell.openPath(logFilePath).catch(err => {
-          alert('无法打开日志文件: ' + err);
-        });
+        shell.openPath(logFilePath)
+          .then(result => {
+            if (result) {
+              console.error('打开日志文件失败:', result);
+              alert('打开日志文件失败: ' + result);
+            }
+          })
+          .catch(err => {
+            console.error('打开日志文件失败:', err);
+            alert('打开日志文件失败: ' + err.message);
+          });
       } else {
+        console.warn('日志文件路径不可用');
         alert('日志文件路径不可用');
       }
     });
 
     document.getElementById('btn-exit').addEventListener('click', () => {
+      console.log('点击退出应用按钮');
       ipcRenderer.send('exit-app');
     });
   </script>

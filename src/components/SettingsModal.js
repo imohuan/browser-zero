@@ -85,11 +85,21 @@ const SettingsModal = {
 
     // 添加会话
     const addSession = () => {
-      let newId = 'session_' + (localSettings.sessionIds.length + 1);
+      const lastSessionId = localSettings.sessionIds[localSettings.sessionIds.length - 1]
+      let [_, name, index] = lastSessionId.match(/([a-zA-Z_]+)(\d+)/)
+      if ((name + index).length !== lastSessionId.length) {
+        name = "D"
+        index = localSettings.sessionIds.length + 1
+      } else {
+        index = parseInt(index) + 1
+      }
+
+      let newId = name + index
       // 确保ID唯一
       while (localSettings.sessionIds.includes(newId)) {
         newId += '_1';
       }
+
       localSettings.sessionIds.push(newId);
     };
 

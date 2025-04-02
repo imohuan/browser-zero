@@ -77,7 +77,6 @@ class NodeManager {
     const id = 'node_' + (++this.nodeCounter);
     const { defaultSessionId, sessionIds } = app.settingsManager.getSettings()
     const node = {
-      id,
       x,
       y,
       width: 600,
@@ -86,6 +85,7 @@ class NodeManager {
       title: '',
       sessionId: options?.sessionId && sessionIds.includes(options.sessionId) ? options.sessionId : defaultSessionId,
       ...options,
+      id,
       selected: true,
       preview: "",
     };

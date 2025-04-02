@@ -124,18 +124,28 @@ async function createMainWindow() {
   return mainWindow
 }
 
+function removeNodeView(win, nodeId) {
+  if (!nodeViews.has(nodeId)) return
+  const nodeViewData = nodeViews.get(nodeId)
+  nodeViewData.view.webContents.destroy()
+  win.contentView.removeChildView(nodeViewData.view)
+  delete nodeViewData.view
+  nodeViews.delete(nodeId)
+}
+
+
 async function createWebContentsView(mainWindow, option) {
   const { nodeId, sessionId, url, bounds, nodeBounds, replaceView = false } = option
   // 检查节点是否已经存在
   if (nodeViews.has(nodeId)) {
     const nodeViewData = nodeViews.get(nodeId)
     if (replaceView) {
-      mainWindow.contentView.removeChildView(nodeViewData.view)
-      delete nodeViewData.view
-      nodeViews.delete(nodeId)
+      removeNodeView(mainWindow, nodeId)
     } else {
       // 检查视图是否可见
-      await nodeViewData.view.webContents.loadURL(url)
+      try {
+        await nodeViewData.view.webContents.loadURL(url)
+      } catch { }
       return nodeViewData.view.webContents.id
     }
   }
@@ -276,11 +286,7 @@ app.whenReady().then(async () => {
   // 删除 WebContentsView
   ipcMain.handle('remove-web-contents-view', (event, { nodeId }) => {
     if (!nodeViews.has(nodeId)) return { success: false, error: 'Node view not found' }
-    const nodeViewData = nodeViews.get(nodeId)
-    nodeViewData.view.webContents.destroy()
-    mainWindow.contentView.removeChildView(nodeViewData.view)
-    nodeViews.delete(nodeId)
-    delete nodeViewData.view
+    removeNodeView(mainWindow, nodeId)
     return { success: true }
   })
 
@@ -289,10 +295,7 @@ app.whenReady().then(async () => {
     let count = 0
     for (const [key, nodeViewData] of nodeViews) {
       if (nodeViewData) {
-        nodeViewData.view.webContents.destroy()
-        mainWindow.contentView.removeChildView(nodeViewData.view)
-        nodeViews.delete(key)
-        delete nodeViewData.view
+        removeNodeView(mainWindow, key)
         count++
       }
     }
@@ -301,6 +304,7 @@ app.whenReady().then(async () => {
       view.webContents.destroy()
       mainWindow.contentView.removeChildView(view)
     })
+
     nodeViews.clear()
     return { success: true, data: count }
   })
@@ -352,14 +356,12 @@ app.whenReady().then(async () => {
       }
       nodeViewData.view.setVisible(status)
     }
-
     for (const [key, nodeViewData] of nodeViews) {
       if (nodeViewData) {
         if (nodeId && nodeId === key) {
           setVisible(nodeViewData)
           break
-        }
-        setVisible(nodeViewData)
+        } else if (!nodeId) setVisible(nodeViewData)
       }
     }
     return { success: true }

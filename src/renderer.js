@@ -65,7 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setupCanvasEvents();
         setupWindowDragEvents();
         setupWindowEvents()
-
         resetView()
       });
 

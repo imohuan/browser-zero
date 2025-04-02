@@ -1,5 +1,6 @@
 # Logs
 cache
+publish.bat
 
 logs
 *.log

@@ -44,31 +44,18 @@
 ## 安装依赖
 
 ```bash
-# 安装依赖
-npm install
-# 或者使用pnpm
 pnpm install
 ```
 
 ## 运行应用
 
 ```bash
-# 开发模式运行
-npm run dev
-# 或者
-pnpm run dev
-
-# 直接启动应用
-npm start
-# 或者
 pnpm start
 ```
 
 ## 构建应用
 
 ```bash
-npm run build
-# 或者
 pnpm run build
 ```
 
@@ -92,13 +79,12 @@ pnpm run build
 |--------|------|
 | Ctrl+C | 复制选中的节点 |
 | Ctrl+V | 粘贴之前复制的节点 |
-| Ctrl+E | 导出选中的节点 |
-| Ctrl+I | 导入节点 |
-| Alt+左箭头 | 节点内容后退 |
-| Alt+右箭头 | 节点内容前进 |
+| Ctrl+上箭头 | 对齐节点 节点向上排列 |
+| Ctrl+右箭头 | 对齐节点 节点向右排列 |
+| Ctrl+下箭头 | 对齐节点 节点向下排列 |
+| Ctrl+左箭头 | 对齐节点 节点向左排列 |
 | Tab | 切换工具（操作/手势） |
 | 空格 | 重置视图 |
-| Ctrl+箭头键 | 对齐节点（上下左右） |
 
 ## 项目目录结构
 
@@ -115,10 +101,6 @@ electron-app/
 │   │   ├── Node.js              # 节点数据模型
 │   │   ├── NodeManager.js       # 节点管理器
 │   │   └── SettingsManager.js   # 设置管理器
-├── cache/              # 应用缓存目录
-│   ├── state/          # 状态存储
-│   ├── screenshot/     # 截图缓存
-│   └── sessions/       # 会话数据存储
 ├── node_modules/       # 依赖模块
 ├── package.json        # 项目配置
 └── README.md           # 项目说明

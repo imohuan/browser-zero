@@ -286,7 +286,8 @@ async function createMainWindow() {
 function removeNodeView(win, nodeId) {
   if (!nodeViews.has(nodeId)) return
   const nodeViewData = nodeViews.get(nodeId)
-  nodeViewData.view.webContents.destroy()
+  if (!nodeViewData.view) return
+  if (nodeViewData.view?.webContents) nodeViewData.view.webContents.destroy()
   win.contentView.removeChildView(nodeViewData.view)
   delete nodeViewData.view
   nodeViews.delete(nodeId)
@@ -302,10 +303,11 @@ async function createWebContentsView(mainWindow, option) {
       removeNodeView(mainWindow, nodeId)
     } else {
       // 检查视图是否可见
+      // TODO：这里会出现不到view
       try {
         await nodeViewData.view.webContents.loadURL(url)
+        return nodeViewData.view.webContents.id
       } catch { }
-      return nodeViewData.view.webContents.id
     }
   }
 
@@ -407,7 +409,10 @@ app.whenReady().then(async () => {
   ipcMain.handle('refresh-web-contents-view', async (event, { nodeId, bounds, nodeBounds, visible }) => {
     if (!nodeViews.has(nodeId)) return { success: false, error: 'Node view not found' }
     const nodeViewData = nodeViews.get(nodeId)
-    if (nodeViewData.view.webContents.isDestroyed()) return { success: false, error: 'Node view is destroyed' }
+    if (nodeViewData.view?.webContents && nodeViewData.view.webContents.isDestroyed()) {
+      return { success: false, error: 'Node view is destroyed' }
+    }
+
     // // 限制渲染 正常为false 受限制为true
     // nodeViewData.view.webContents.setBackgroundThrottling(!visible)
     // if (nodeViewData.view.webContents.isLoading()) return { success: true, content: "页面加载中" }

@@ -119,7 +119,6 @@ document.addEventListener('DOMContentLoaded', () => {
             app.nodeManager.saveCanvasState()
             await app.nodeManager.loadCanvasState();
             resetView()
-            // app.canvasManager.redraw()
           }
 
           if (e.key === " ") {
@@ -131,6 +130,14 @@ document.addEventListener('DOMContentLoaded', () => {
             ipcRenderer.invoke("set-web-contents-view-visible", { status: showLogViewer.value })
             showLogViewer.value = !showLogViewer.value;
             logger.info('切换日志查看器', { show: showLogViewer.value });
+          }
+
+
+          if (e.key === 'Escape') {
+            // 关闭所有弹出窗口
+            showLogViewer.value = false
+            showSettings.value = false
+            ipcRenderer.invoke("set-web-contents-view-visible", { status: true })
           }
 
           if (e.ctrlKey) {
@@ -145,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 app.nodeManager.arrange('right')
                 break
               case "ArrowDown":
-                app.nodeManager.arrange('down')
+                app.nodeManager.arrange('bottom')
                 break
             }
           }
@@ -386,7 +393,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // 重置视图
       const resetView = () => {
         if (!app) return;
-        const { offsetX, offsetY, scale } = app.nodeManager.calculateOptimalViewport(100)
+        // 计算选中
+        const nodes = Array.from(app.nodeManager.nodes.entries()).map(([nodeId, node]) => ({ nodeId, ...node })).filter(f => f.selected)
+        const { offsetX, offsetY, scale } = app.nodeManager.calculateOptimalViewport(100, nodes)
         app.canvasManager.scale = scale;
         app.canvasManager.offsetX = offsetX;
         app.canvasManager.offsetY = offsetY;

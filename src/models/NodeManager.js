@@ -631,8 +631,11 @@ class NodeManager {
  * @param {number} padding - 边距（可选，默认为 20）
  * @returns {Object} 包含 offsetX, offsetY 和 scale 的对象
  */
-  calculateOptimalViewport(padding = 20) {
-    const nodes = Array.from(this.nodes.entries()).map(([nodeId, node]) => ({ nodeId, ...node }))
+  calculateOptimalViewport(padding = 20, nodes = []) {
+    if (nodes.length === 0) {
+      nodes = Array.from(this.nodes.entries()).map(([nodeId, node]) => ({ nodeId, ...node }))
+    }
+
     const { width: canvasWidth, height: canvasHeight } = this.canvasManager.ctx.canvas
     if (!nodes || nodes.length === 0) {
       return { offsetX: 0, offsetY: 0, scale: 1 };
@@ -699,7 +702,6 @@ class NodeManager {
       for (let i = 0; i < selectedNodes.length; i++) {
         const nodeId = selectedNodes[i].nodeId;
         const node = this.nodes.get(nodeId);
-        console.log(111, node);
         selectedNodes[i].x = node.x;
         selectedNodes[i].y = node.y;
         selectedNodes[i].width = node.width;
@@ -945,8 +947,8 @@ class NodeManager {
     try {
       const state = JSON.parse(stateStr)
       this.nodes.clear();
+      // TODO：日后修复，这里代价太高需要修复
       await ipcRenderer.invoke('remove-web-contents-view-all')
-
       state.nodes.forEach(([nodeId, node]) => {
         this.nodes.set(nodeId, node);
       });

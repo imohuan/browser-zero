@@ -3,37 +3,39 @@
 
 const LogViewer = {
   template: `
-    <div class="log-viewer" v-if="visible">
-      <div class="log-viewer-header">
-        <div class="log-viewer-title">日志查看器</div>
-        <div class="log-viewer-controls">
-          <button class="btn-refresh" @click="refreshLogs">刷新</button>
-          <button class="btn-open-file" @click="openLogFile">打开日志文件</button>
-          <button class="btn-copy" @click="copyLogs">复制</button>
-          <button class="btn-close" @click="close">关闭</button>
-        </div>
-      </div>
-      <div class="log-viewer-content">
-        <div class="log-filter">
-          <div class="filter-item">
-            <label for="log-level">日志级别:</label>
-            <select id="log-level" v-model="filter.level">
-              <option value="all">全部</option>
-              <option value="debug">Debug</option>
-              <option value="info">Info</option>
-              <option value="warn">Warn</option>
-              <option value="error">Error</option>
-              <option value="fatal">Fatal</option>
-            </select>
-          </div>
-          <div class="filter-item">
-            <label for="log-search">搜索:</label>
-            <input id="log-search" type="text" v-model="filter.search" placeholder="搜索日志内容..." />
+    <div class="bg-opacity-50 fixed inset-0 z-[3000] flex items-center justify-center bg-black" v-if="visible">
+      <div class="log-viewer">
+        <div class="log-viewer-header">
+          <div class="log-viewer-title">日志查看器</div>
+          <div class="log-viewer-controls">
+            <button class="btn-refresh" @click="refreshLogs">刷新</button>
+            <button class="btn-open-file" @click="openLogFile">打开日志文件</button>
+            <button class="btn-copy" @click="copyLogs">复制</button>
+            <button class="btn-close" @click="close">关闭</button>
           </div>
         </div>
-        <div class="log-content" ref="logContent">
-          <pre v-if="logs.length">{{ filteredLogs }}</pre>
-          <div class="no-logs" v-else>暂无日志数据</div>
+        <div class="log-viewer-content">
+          <div class="log-filter">
+            <div class="filter-item">
+              <label for="log-level">日志级别:</label>
+              <select id="log-level" v-model="filter.level">
+                <option value="all">全部</option>
+                <option value="debug">Debug</option>
+                <option value="info">Info</option>
+                <option value="warn">Warn</option>
+                <option value="error">Error</option>
+                <option value="fatal">Fatal</option>
+              </select>
+            </div>
+            <div class="filter-item">
+              <label for="log-search">搜索:</label>
+              <input id="log-search" type="text" v-model="filter.search" placeholder="搜索日志内容..." />
+            </div>
+          </div>
+          <div class="log-content" ref="logContent">
+            <pre v-if="logs.length">{{ filteredLogs }}</pre>
+            <div class="no-logs" v-else>暂无日志数据</div>
+          </div>
         </div>
       </div>
     </div>

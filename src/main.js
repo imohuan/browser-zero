@@ -9,12 +9,13 @@ const logger = getLogger();
 
 const isDev = 'ELECTRON_IS_DEV' in process.env ? Number.parseInt(process.env.ELECTRON_IS_DEV, 10) === 1 : !app.isPackaged;
 const nodeViews = new Map()
-// 根据环境设置缓存目录
 
+// 根据环境设置缓存目录
 const appPath = isDev ? __dirname : path.dirname(app.getPath('exe'))
-const cacheDir = path.join(appPath, '../.cache')
+const cacheDir = isDev ? path.join(appPath, '../.cache') : path.join(appPath, "cache")
 const stateDir = path.join(cacheDir, 'state')
 const screenshotDir = path.join(cacheDir, 'screenshot')
+const sharedCacheSession = session.fromPartition('persist:shared_cache');
 
 ensureDir(cacheDir)
 ensureDir(stateDir)
@@ -311,8 +312,12 @@ async function createWebContentsView(mainWindow, option) {
     }
   }
 
-  const customSession = session.fromPartition(`persist:${sessionId}`)
-  console.log("使用Session:", sessionId);
+  // const customSession = session.fromPartition(`persist:${sessionId}`)
+  // console.log("使用Session:", sessionId);
+  // 如果每个用户使用独立的 partition，缓存也会独立，可能导致重复下载资源。
+  // 使用相同的 partition 字符串（如 persist:shared_cache）来共享缓存。 通过 session.setCacheDirectory 设置全局缓存路径，所有会话共享缓存。
+  const customSession = session.fromPartition(sessionId);
+  customSession.setCacheDirectory(sharedCacheSession.getCacheDirectory());
   const nodeViewData = { disableVisible: true }
   const nodeView = new WebContentsView({
     webPreferences: {
@@ -321,9 +326,12 @@ async function createWebContentsView(mainWindow, option) {
       contextIsolation: true,
       // 启用背景节流以减少不可见时的CPU占用
       backgroundThrottling: true,
-      webSecurity: false
+      webSecurity: false,
+      webgl: true,
+      plugins: true,
     }
   })
+
   nodeView.webContents.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36');
   nodeView.setVisible(false)
   nodeView.webContents.on("did-finish-load", () => {

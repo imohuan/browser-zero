@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Canvas Renderer</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="canvas"></canvas>
+  <script>
+    const { ipcRenderer, desktopCapturer } = require('electron');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // 设置 canvas 尺寸
+    canvas.width = 800;
+    canvas.height = 600;
+
+    ipcRenderer.on('texture', (_event, source) => {
+      console.log(source);
+      // Or similar function for chromium shared textures
+      // const externalTexture = gpuDevice.importExternalTexture({ source })
+      // Use the texture in a webGPU pipeline and eventually
+      // render the result to a canvas element
+    })
+
+    ipcRenderer.on('offscreen-ready', async (event, sourceId) => {
+      try {
+        // 使用desktopCapturer获取离屏窗口的媒体流
+        const sources = await desktopCapturer.getSources({
+          types: ['window'],
+          thumbnailSize: { width: 0, height: 0 }
+        });
+
+        // 找到对应的窗口源
+        const source = sources.find(s => s.id.includes(sourceId.toString()));
+        if (source) {
+          // 获取媒体流
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              mandatory: {
+                chromeMediaSource: 'desktop',
+                chromeMediaSourceId: source.id
+              }
+            }
+          });
+
+          // 创建视频元素显示内容
+          const video = document.createElement('video');
+          video.srcObject = stream;
+          video.play();
+          document.body.appendChild(video);
+
+          // 或者创建WebGL上下文并使用视频纹理
+          const canvas = document.createElement('canvas');
+          const gl = canvas.getContext('webgl2');
+          // 使用视频创建WebGL纹理...
+        }
+      } catch (error) {
+        console.error('获取共享纹理失败:', error);
+      }
+    });
+
+
+    // 接收主进程发送的帧数据
+    ipcRenderer.on('frame-data', (event, pngBuffer) => {
+      console.log("收到帧数据，大小:", pngBuffer.length);
+
+      // 创建Blob对象
+      const blob = new Blob([pngBuffer], { type: 'image/png' });
+
+      // 创建URL
+      const url = URL.createObjectURL(blob);
+
+      // 创建Image对象
+      const img = new Image();
+      img.onload = () => {
+        // 清除画布
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 绘制图像
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        // 释放URL
+        URL.revokeObjectURL(url);
+      };
+
+      // 设置图像源
+      img.src = url;
+    });
+  </script>
+</body>
+
+</html>

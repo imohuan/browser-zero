@@ -1,7 +1,7 @@
 # Logs
 cache
 publish.bat
-
+.native
 logs
 *.log
 npm-debug.log*

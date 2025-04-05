@@ -106,18 +106,18 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault()
             e.stopPropagation()
             logger.info('刷新应用');
+
             await app.nodeManager.saveCanvasState();
+            if (!app.nodeManager.name.trim()) {
+              return
+            }
             await ipcRenderer.invoke('remove-web-contents-view-all')
             setTimeout(() => location.reload(), 200);
           }
 
           if (e.ctrlKey && e.key === 'n') {
             logger.info('清除所有节点');
-            await ipcRenderer.invoke('remove-web-contents-view-all')
-            app.nodeManager.nodes.clear()
-            app.nodeManager.clearHistory()
-            app.nodeManager.saveCanvasState()
-            await app.nodeManager.loadCanvasState();
+            app.nodeManager.reset()
             resetView()
           }
 
@@ -158,6 +158,40 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         })
       }
+
+      // 新建项目处理
+      const handleNewProject = async () => {
+        try {
+          // 获取当前画布状态
+          const canvasState = {
+            nodes: Array.from(app.nodeManager.nodes.entries()),
+            viewport: {
+              offsetX: app.canvasManager.offsetX,
+              offsetY: app.canvasManager.offsetY,
+              scale: app.canvasManager.scale
+            }
+          };
+
+          // 保存项目
+          const result = await ipcRenderer.invoke('save-project', {
+            projectData: {
+              name: `新项目_${Date.now()}`,
+              created: new Date().toISOString(),
+              canvasState,
+              settings: app.settingsManager.getSettings()
+            }
+          });
+
+          if (result.success) {
+            notificationSystem.value.showNotification(`项目已保存至: ${result.path}`, 'success');
+          } else {
+            notificationSystem.value.showNotification(`保存失败: ${result.error}`, 'error');
+          }
+        } catch (error) {
+          logger.error('保存项目失败', error);
+          notificationSystem.value.showNotification(`保存失败: ${error.message}`, 'error');
+        }
+      };
 
       // 设置窗口拖拽事件
       const setupWindowDragEvents = () => {
@@ -422,6 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!app) return;
         await app.saveSettings(newSettings);
         showSettings.value = false;
+        ipcRenderer.invoke("set-web-contents-view-visible", { status: true })
       };
 
       // 显示URL输入框
@@ -539,6 +574,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const vueApp = createApp(App);
 
   vueApp.component('app-title-bar', AppTitleBar);
+  vueApp.component('new-project-button', NewProjectButton);
   vueApp.component('window-controls', WindowControls);
   vueApp.component('sidebar-menu', SidebarMenu);
   vueApp.component('settings-modal', SettingsModal);

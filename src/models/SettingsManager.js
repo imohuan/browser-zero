@@ -9,7 +9,8 @@ class SettingsManager {
     // 设置默认值
     this.defaultSettings = {
       defaultSessionId: 'D1',
-      sessionIds: ['D1']
+      sessionIds: ['D1'],
+      nodePadding: 5
     };
     // 当前应用设置
     this.settings = { ...this.defaultSettings };

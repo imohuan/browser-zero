@@ -13,9 +13,16 @@ const SettingsModal = {
     </div>
     <div class="px-6 py-4 flex-1 w-full h-full overflow-y-auto">
       <div class="mb-4">
+        <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">节点外边距</label>
+        <input type="number" v-model="localSettings.nodePadding" placeholder="外边距" min="0" max="10" class="focus:ring-primary focus:border-primary w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:ring-2 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
+      </div>
+
+
+      <div class="mb-4">
         <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">默认会话</label>
         <input type="text" v-model="localSettings.defaultSessionId" placeholder="默认会话ID" class="focus:ring-primary focus:border-primary w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:ring-2 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
       </div>
+
       <div class="mb-4">
         <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">所有会话</label>
         <div class="space-y-2">
@@ -65,7 +72,8 @@ const SettingsModal = {
     // 本地设置对象（用于编辑）
     const localSettings = reactive({
       defaultSessionId: '',
-      sessionIds: []
+      sessionIds: [],
+      nodePadding: 5
     });
 
     const setDefaultSessionId = (newSettings = {}) => {
@@ -78,6 +86,7 @@ const SettingsModal = {
     // 当props.settings变化时，更新本地设置对象
     watch(() => props.settings, (newSettings) => {
       if (newSettings && props.show) {
+        localSettings.nodePadding = newSettings.nodePadding
         localSettings.sessionIds = [...(newSettings.sessionIds || ['default'])];
         setDefaultSessionId(newSettings)
       }
@@ -124,11 +133,7 @@ const SettingsModal = {
       if (!localSettings.sessionIds.includes(localSettings.defaultSessionId)) {
         localSettings.defaultSessionId = localSettings.sessionIds[0];
       }
-
-      emit('save', {
-        defaultSessionId: localSettings.defaultSessionId,
-        sessionIds: [...localSettings.sessionIds]
-      });
+      emit('save', JSON.parse(JSON.stringify(localSettings)));
     };
 
     return {

@@ -1,8 +1,12 @@
 // 侧边栏菜单组件
 const SidebarMenu = {
   template: `
-<div class="absolute bottom-5 overflow-hidden left-1/2 z-[900] flex h-11 -translate-x-1/2 items-center rounded-xl bg-white px-2 shadow-md transition-all duration-300 dark:bg-gray-800" :class="{ 'opacity-0 translate-y-full': isCollapsed ? !isHover : isCollapsed  }">
-  <div class="flex w-full flex-col border-r-2 border-gray-200 py-1 dark:border-gray-700">
+<div ref="el" class="absolute bottom-5 left-1/2 z-[900] flex h-11 -translate-x-1/2 items-center rounded-xl bg-white px-2 shadow-md transition-all duration-300 dark:bg-gray-800" :class="{ 'opacity-0 translate-y-full': isCollapsed ? !isHover : isCollapsed  }">
+  <div class="flex flex-1 border-r-2 border-gray-200 px-1 dark:border-gray-700">
+    <new-project-button></new-project-button>
+  </div>
+
+  <div class="flex border-r-2 border-gray-200 px-1 dark:border-gray-700">
     <button class="mx-0.5 flex h-10 w-10 items-center justify-center rounded-lg text-gray-600 transition-all hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700" title="添加节点" @click="$emit('add-node')">
       <svg width="20" height="20" viewBox="0 0 24 24">
         <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" fill="currentColor" />
@@ -10,7 +14,7 @@ const SidebarMenu = {
     </button>
   </div>
 
-  <div class="flex w-full border-r-2 border-gray-200 px-1 dark:border-gray-700">
+  <div class="flex border-r-2 border-gray-200 px-1 dark:border-gray-700">
     <button class="mx-0.5 flex h-10 w-10 items-center justify-center rounded-lg text-gray-600 transition-all dark:text-gray-400" :class="[currentTool === 'hand' ? 'bg-blue-500 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700']" title="拖拽画布" @click="$emit('switch-tool', 'hand')">
       <svg t="1743417296709" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2438" width="20" height="20">
         <path d="M533.333333 85.333333a106.666667 106.666667 0 0 1 90.197334 49.706667c11.904-4.650667 24.746667-7.04 37.802666-7.04a106.666667 106.666667 0 0 1 106.325334 98.218667L768 234.666667v23.466666a106.666667 106.666667 0 0 1 127.658667 96.085334L896 362.666667v213.333333a362.666667 362.666667 0 0 1-725.077333 13.098667L170.666667 576v-85.333333a106.666667 106.666667 0 0 1 128.042666-104.533334L298.666667 234.666667a106.666667 106.666667 0 0 1 144.554666-99.712A106.666667 106.666667 0 0 1 533.333333 85.333333z m21.333334 106.666667a21.333333 21.333333 0 0 0-42.410667-3.370667L512 192V469.333333a42.666667 42.666667 0 0 1-85.034667 4.992L426.666667 469.333333V234.666667a21.333333 21.333333 0 0 0-42.410667-3.370667L384 234.666667V597.333333a42.666667 42.666667 0 0 1-85.034667 4.992L298.666667 597.333333v-106.666666a21.333333 21.333333 0 0 0-42.410667-3.370667L256 490.666667v85.333333a277.333333 277.333333 0 0 0 554.368 12.928L810.666667 576v-213.333333a21.333333 21.333333 0 0 0-42.410667-3.370667L768 362.666667V469.333333a42.666667 42.666667 0 0 1-85.034667 4.992L682.666667 469.333333V234.666667a21.333333 21.333333 0 0 0-42.410667-3.370667L640 234.666667V469.333333a42.666667 42.666667 0 0 1-85.034667 4.992L554.666667 469.333333V192z" fill="currentColor" p-id="2439"></path>
@@ -23,7 +27,7 @@ const SidebarMenu = {
     </button>
   </div>
 
-  <div class="flex w-full px-1">
+  <div class="flex px-1">
     <button class="mx-0.5 flex h-10 w-10 items-center justify-center rounded-lg text-gray-600 transition-all hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700" title="重置视图" @click="$emit('reset-view')">
       <svg width="20" height="20" viewBox="0 0 24 24">
         <path d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17Z" fill="currentColor" />
@@ -55,7 +59,11 @@ const SidebarMenu = {
   },
   emits: ['toggle-sidebar', 'switch-tool', 'add-node', 'reset-view', 'open-settings', 'open-logs'],
   setup(props, { emit }) {
-    const { inside: isHover } = hooks.useMouseInside(() => [document.body.offsetWidth / 2 - 150, document.body.offsetHeight - 70, 300, 70])
+    const el = Vue.useTemplateRef("el")
+    const { inside: isHover } = hooks.useMouseInside(() => {
+      const width = el.value?.offsetWidth ?? 520
+      return [document.body.offsetWidth / 2 - width / 2, document.body.offsetHeight - 70, width, 70]
+    })
     return { isHover };
   }
 }; 

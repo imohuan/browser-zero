@@ -14,11 +14,12 @@ const nodeViews = new Map()
 const appPath = isDev ? __dirname : path.dirname(app.getPath('exe'))
 const cacheDir = isDev ? path.join(appPath, '../.cache') : path.join(appPath, "cache")
 const stateDir = path.join(cacheDir, 'state')
+const projectDir = path.join(cacheDir, 'workspace')
 const screenshotDir = path.join(cacheDir, 'screenshot')
-const sharedCacheSession = session.fromPartition('persist:shared_cache');
 
 ensureDir(cacheDir)
 ensureDir(stateDir)
+ensureDir(projectDir)
 ensureDir(screenshotDir)
 // 设置应用缓存目录
 app.setPath('userData', cacheDir)
@@ -312,12 +313,15 @@ async function createWebContentsView(mainWindow, option) {
     }
   }
 
-  // const customSession = session.fromPartition(`persist:${sessionId}`)
+  const customSession = session.fromPartition(`persist:${sessionId}`)
+  // customSession.webRequest.onBeforeSendHeaders({ "urls": ["<all_urls>"] }, (details, callback) => {
+  //   callback({ requestHeaders: details.requestHeaders })
+  // })
   // console.log("使用Session:", sessionId);
   // 如果每个用户使用独立的 partition，缓存也会独立，可能导致重复下载资源。
   // 使用相同的 partition 字符串（如 persist:shared_cache）来共享缓存。 通过 session.setCacheDirectory 设置全局缓存路径，所有会话共享缓存。
-  const customSession = session.fromPartition(sessionId);
-  customSession.setCacheDirectory(sharedCacheSession.getCacheDirectory());
+  // const customSession = session.fromPartition(sessionId);
+  // customSession.setCacheDirectory(sharedCacheSession.getCacheDirectory());
   const nodeViewData = { disableVisible: true }
   const nodeView = new WebContentsView({
     webPreferences: {
@@ -546,10 +550,26 @@ app.whenReady().then(async () => {
     return { success: true }
   })
 
+  // 获取画布状态列表
+  ipcMain.handle('get-canvas-state-list', (event) => {
+    const files = fs.readdirSync(projectDir)
+    const data = files.filter(file => file.endsWith('.json'))
+    return { success: true, data }
+  })
+
+  // 删除画布状态
+  ipcMain.handle('remove-canvas-state', (event, { name }) => {
+    const stateFilePath = path.join(projectDir, `${name}.json`)
+    if (fs.existsSync(stateFilePath)) {
+      fs.unlinkSync(stateFilePath)
+    }
+    return { success: true }
+  })
+
   // 保存画布状态
-  ipcMain.handle('save-canvas-state', (event, { state }) => {
+  ipcMain.handle('save-canvas-state', (event, { name, state }) => {
     try {
-      const stateFilePath = path.join(stateDir, 'canvas-state.json')
+      const stateFilePath = path.join(projectDir, `${name}.json`)
       // 序列化状态数据
       // 注意：Map不能直接序列化，需要转换为普通对象
       const serializableState = {
@@ -568,9 +588,10 @@ app.whenReady().then(async () => {
   });
 
   // 加载画布状态
-  ipcMain.handle('load-canvas-state', (event) => {
+  ipcMain.handle('load-canvas-state', (event, { name }) => {
     try {
-      const stateFilePath = path.join(stateDir, 'canvas-state.json');
+      if (!name) name = "default"
+      const stateFilePath = path.join(projectDir, `${name}.json`);
 
       if (fs.existsSync(stateFilePath)) {
         const stateData = fs.readFileSync(stateFilePath, 'utf8');

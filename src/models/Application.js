@@ -64,7 +64,7 @@ class Application {
       if (e.ctrlKey && e.key === 's') {
         e.preventDefault();
         this.nodeManager.saveCanvasState();
-        this.showNotification('已保存画布状态', 'success');
+        // this.showNotification('已保存画布状态', 'success');
       }
 
       if (e.ctrlKey && e.key === "c" && document.activeElement.tagName !== "INPUT" && this.nodeManager.selectedNode) {
@@ -291,6 +291,81 @@ class Application {
    */
   setNotifyCallback(callback) {
     this.notifyCallback = callback;
+  }
+
+  showConfirm(title, formCreator, buttonTexts) {
+    return new Promise((resolve, reject) => {
+      // 创建遮罩层
+      const overlay = document.createElement('div');
+      overlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+
+      // 创建对话框容器
+      const dialog = document.createElement('div');
+      dialog.className = 'bg-white rounded-lg shadow-xl p-6 w-full max-w-md';
+
+      // 创建消息元素
+      const messageEl = document.createElement('div');
+      messageEl.className = 'text-gray-800 mb-4';
+      messageEl.textContent = title;
+
+      // 创建输入区域
+      const inputContainer = document.createElement('div');
+      inputContainer.className = 'mb-6';
+
+
+      const items = formCreator()
+      items.forEach(item => inputContainer.appendChild(item))
+
+      // 创建按钮容器
+      const buttonContainer = document.createElement('div');
+      buttonContainer.className = 'flex justify-end space-x-3';
+
+      // 创建按钮
+      buttonTexts.forEach((text, index) => {
+        const button = document.createElement('button');
+        button.className = `px-4 py-2 rounded-md ${index === buttonTexts.length - 1
+          ? 'bg-blue-500 text-white hover:bg-blue-600'
+          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+          } transition-colors`;
+        button.textContent = text;
+
+        button.addEventListener('click', () => {
+          if (index === buttonTexts.length - 1) {
+            resolve(items);
+          } else {
+            reject(false);
+          }
+          document.body.removeChild(overlay);
+        });
+
+        buttonContainer.appendChild(button);
+      });
+
+      // 组装对话框
+      dialog.appendChild(messageEl);
+      dialog.appendChild(inputContainer);
+      dialog.appendChild(buttonContainer);
+      overlay.appendChild(dialog);
+
+      // 添加到DOM
+      document.body.appendChild(overlay);
+
+      // 自动聚焦输入框
+      for (const item of items) {
+        if (item.tagName === "INPUT") {
+          item.focus()
+          break
+        }
+      }
+      // 按ESC键取消
+      overlay.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          reject(false);
+          // reject(new Error('用户取消'));
+          document.body.removeChild(overlay);
+        }
+      });
+    });
   }
 }
 

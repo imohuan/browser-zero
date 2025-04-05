@@ -11,6 +11,7 @@ class NodeManager {
    * @param {CanvasManager} canvasManager - 画布管理器实例
    */
   constructor(canvasManager) {
+    this.name = ""
     this.canvasManager = canvasManager;
 
     // 节点集合
@@ -1016,7 +1017,28 @@ class NodeManager {
    * 保存画布状态
    */
   saveCanvasState() {
-    ipcRenderer.invoke('save-canvas-state', { state: this.getState() });
+    if (!this.name?.trim()) {
+      ipcRenderer.invoke("set-web-contents-view-visible", { status: false })
+      app.showConfirm("请输入您的名称：", () => {
+        const input = document.createElement("input")
+        input.className = 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500';
+        input.type = "text"
+        input.placeholder = "请输入您的名称"
+        return [input]
+      }, ["取消", "保存"]).then(([input]) => {
+        const name = input.value.trim()
+        if (name) {
+          this.name = input.value.trim()
+          this.saveCanvasState()
+        } else {
+          app.showNotification("请输入您的名称")
+        }
+      }).finally(() => {
+        ipcRenderer.invoke("set-web-contents-view-visible", { status: true })
+      })
+      return
+    }
+    ipcRenderer.invoke('save-canvas-state', { name: this.name, state: this.getState() });
   }
 
   loadViews() {
@@ -1046,9 +1068,11 @@ class NodeManager {
   /**
    * 加载画布状态
    */
-  async loadCanvasState() {
-    const { state } = await ipcRenderer.invoke('load-canvas-state');
+  async loadCanvasState(name = "") {
+    await ipcRenderer.invoke('remove-web-contents-view-all')
+    const { state } = await ipcRenderer.invoke('load-canvas-state', { name });
     if (state && state.nodes) {
+      this.name = name !== "" ? name : "default"
       this.nodes.clear();
       for (const [nodeId, node] of state.nodes.entries()) {
         node.selected = false
@@ -1075,7 +1099,6 @@ class NodeManager {
     } else {
       this.initNode()
     }
-
     return false;
   }
 
@@ -1119,7 +1142,8 @@ class NodeManager {
     ctx.lineWidth = selected || this.resizeNodeId === nodeId ? 2 : 1;
     ctx.strokeStyle = nodeStroke;
 
-    const p = 5;
+    const p = app.settingsManager.getSettings().nodePadding;
+
     // 绘制节点主体
     ctx.beginPath();
     ctx.roundRect(x - p, y - p, width + p * 2, height + p * 2, 8);
@@ -1381,7 +1405,7 @@ class NodeManager {
     const menuContainer = document.createElement('div');
     menuContainer.id = 'session-selector';
     menuContainer.setAttribute("data-node-id", nodeId)
-    menuContainer.className = 'absolute z-[3000] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg py-1 min-w-[150px]';
+    menuContainer.className = 'absolute z-[3000] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg py-1 min-w-[150px] max-h-[400px]';
     menuContainer.style.left = `${x}px`;
     menuContainer.style.top = `${y + 10}px`; // 在Logo下方显示
 
@@ -1432,6 +1456,16 @@ class NodeManager {
     setTimeout(() => {
       document.addEventListener('click', handleClickOutside);
     }, 100);
+  }
+
+  async reset() {
+    await ipcRenderer.invoke('remove-web-contents-view-all')
+    this.nodes.clear()
+    this.clearHistory()
+    this.name = ""
+    // this.saveCanvasState()
+    // await this.loadCanvasState();
+    this.initNode()
   }
 }
 
